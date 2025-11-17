@@ -1,8 +1,20 @@
 import requests
 from bs4 import BeautifulSoup
 import random
+import pickle
 
 
+def save_data(data, filename="users.pkl"):
+    with open(filename, "wb") as f:
+        pickle.dump(data, f)
+
+
+def load_data(filename="users.pkl"):
+    try:
+        with open(filename, "rb") as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        return []
 
 
 def user_info(users_data: list) -> None:
@@ -79,7 +91,8 @@ def get_map(users_data:list)->None:
     m.save("notatnik.html")
 
 if __name__ == "__main__":
-    users_data=[]
+    users_data = load_data()
     add_user(users_data)
     remove_user(users_data)
+    save_data(users_data)
 
