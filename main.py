@@ -15,8 +15,8 @@ ramka_mapa = Frame(root)
 
 ramka_lista_obiektow.grid(row=0, column=0)
 ramka_formularz.grid(row=0, column=1)
-ramka_szczegoly_obiektu.grid(row=1, column=0)
-ramka_mapa.grid(row=2, column=0)
+ramka_szczegoly_obiektu.grid(row=1, column=0, columnspan=2)
+ramka_mapa.grid(row=2, column=0, columnspan=2)
 
 #RAMKA LISTA OBIEKTOW
 label_lista_obiektow = Label(ramka_lista_obiektow, text="Lista obiektow")
