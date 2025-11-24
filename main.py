@@ -50,24 +50,43 @@ class User:
         if len(latitudes) == 0 or len(longitudes) == 0:
             return [52.0, 21.0]  # fallback
 
-        # bezpieczne pobranie koordynat
+
         lat = float(latitudes[-1].text.replace(",", "."))
         lon = float(longitudes[-1].text.replace(",", "."))
         return [lat, lon]
 
 
 def add_user(users_data: list) -> None:
-    name = entry_name.get()
-    location = entry_lokalizacja.get()
-    posts = int(entry_posty.get())
-    img_url = entry_img_url.get()
-    users_data.append(User(name=name, location=location, posts=posts, img_url=img_url))
+    import psycopg2
+
+    db_engine = psycopg2.connect(
+        user="postgres",
+        database="postgres",
+        password="postgres",
+        port="5432",
+        host="localhost"
+    )
+    cursor=db_engine.cursor()
+
+
+    name: str = entry_name.get()
+    location: str = entry_lokalizacja.get()
+    posts:int=int(entry_posty.get())
+    img_url: str = entry_img_url.get()
+    user=User(name=name, location=location, posts=posts, img_url=img_url)
+    users_data.append(user)
+    print(users_data)
+    SQL = f"INSERT INTO public.users(name, location, posts, img_url, geometry) VALUES ('{name}', '{location}', {posts}, '{img_url}', 'SRID=4326;POINT({user.coords[0]} {user.coords[1]})');"
     user_info(users_data)
+    #czyszczenie formularza
     entry_name.delete(0, END)
     entry_lokalizacja.delete(0, END)
     entry_posty.delete(0, END)
     entry_img_url.delete(0, END)
     entry_name.focus()
+    cursor.execute(SQL)
+    db_engine.commit()
+
 
 
 def user_info(users_data: list):
