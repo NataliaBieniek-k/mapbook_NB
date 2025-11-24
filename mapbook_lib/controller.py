@@ -1,4 +1,4 @@
-# controller.py
+
 from model import User
 
 def add_user(users_data, map_widget, entry_name, entry_lokalizacja, entry_posty, entry_img_url, list_update_function):

@@ -1,4 +1,4 @@
-# view.py
+
 from tkinter import *
 import tkintermapview
 from controller import *
