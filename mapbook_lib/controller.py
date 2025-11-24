@@ -1,104 +1,71 @@
-import requests
-from bs4 import BeautifulSoup
-import pickle
-import folium
-import random
 
-class User:
-    def __init__(self, name: str, location: str, posts: int, img_url: str):
-        self.name = name
-        self.location = location
-        self.posts = posts
-        self.img_url = img_url
-        self.coords = self.get_coordinates()
+from model import User
 
-def save_data(data, filename="users.pkl"):
-    with open(filename, "wb") as f:
-        pickle.dump(data, f)
+def add_user(users_data, map_widget, entry_name, entry_lokalizacja, entry_posty, entry_img_url, list_update_function):
+    name = entry_name.get()
+    location = entry_lokalizacja.get()
+    posts = int(entry_posty.get())
+    img_url = entry_img_url.get()
 
+    users_data.append(User(name=name, location=location, posts=posts, img_url=img_url, map_widget=map_widget))
+    list_update_function(users_data)
 
-def load_data(filename="users.pkl"):
-    try:
-        with open(filename, "rb") as f:
-            return pickle.load(f)
-    except FileNotFoundError:
-        return []
+    entry_name.delete(0, "end")
+    entry_lokalizacja.delete(0, "end")
+    entry_posty.delete(0, "end")
+    entry_img_url.delete(0, "end")
+    entry_name.focus()
 
 
-def user_info(users_data: list) -> None:
-    for user in users_data:
-        print(f"Twój znajomy {user['name']} z miejscowości {user['location']} "
-              f"opublikował {user['posts']} postów.")
+def user_info(users_data, list_box):
+    list_box.delete(0, "end")
+    for idx, user in enumerate(users_data):
+        list_box.insert(idx, f"{user.name} {user.location} {user.posts} posty")
 
 
-def add_user(users_data: list) -> None:
-    name = input("Podaj imię nowego znajomego: ")
-    location = input("Podaj nazwę miejscowości: ")
-    posts = int(input("Podaj liczbę postów: "))
-    users_data.append({"name": name, "location": location, "posts": posts})
-    print("Dodano użytkownika.")
+def delete_user(users_data, list_box, update_list):
+    i = list_box.index("active")
+    users_data[i].marker.delete()
+    users_data.pop(i)
+    update_list(users_data)
 
 
-def remove_user(users_data: list) -> None:
-    tmp_name = input("Podaj imię użytkownika do usunięcia: ")
-    for user in users_data:
-        if user['name'] == tmp_name:
-            users_data.remove(user)
-            print("Usunięto użytkownika.")
-            return
-    print("Nie znaleziono takiego użytkownika.")
+def user_details(users_data, list_box, labels, map_widget):
+    i = list_box.index("active")
+    user = users_data[i]
+
+    labels["name"].config(text=user.name)
+    labels["location"].config(text=user.location)
+    labels["posts"].config(text=user.posts)
+
+    map_widget.set_position(user.coords[0], user.coords[1])
+    map_widget.set_zoom(14)
 
 
-def update_user(users_data: list) -> None:
-    tmp_name = input("Podaj imię użytkownika do aktualizacji: ")
-    for user in users_data:
-        if user['name'] == tmp_name:
-            user['name'] = input("Nowe imię: ")
-            user['location'] = input("Nowa miejscowość: ")
-            user['posts'] = int(input("Nowa liczba postów: "))
-            print("Zaktualizowano użytkownika.")
-            return
-    print("Nie znaleziono takiego użytkownika.")
+def edit_user(users_data, list_box, entries, button, update_user_func):
+    i = list_box.index("active")
+
+    entries["name"].insert(0, users_data[i].name)
+    entries["location"].insert(0, users_data[i].location)
+    entries["posts"].insert(0, users_data[i].posts)
+    entries["img"].insert(0, users_data[i].img_url)
+
+    button.config(text="Zapisz zmiany", command=lambda: update_user_func(users_data, i))
 
 
-def get_coordinates(city_name: str) -> list:
-    url = f'https://pl.wikipedia.org/wiki/{city_name}'
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                      "AppleWebKit/537.36 (KHTML, like Gecko) "
-                      "Chrome/120.0.0.0 Safari/537.36"
-    }
-    response = requests.get(url, headers=headers)
-    response_html = BeautifulSoup(response.text, 'html.parser')
-    latitude = float(response_html.select('.latitude')[1].text.replace(',', '.'))
-    longitude = float(response_html.select('.longitude')[1].text.replace(',', '.'))
-    return [latitude, longitude]
+def update_user(users_data, i, entries, list_update_function, map_widget, button_add):
+    users_data[i].name = entries["name"].get()
+    users_data[i].location = entries["location"].get()
+    users_data[i].posts = entries["posts"].get()
+    users_data[i].img_url = entries["img"].get()
 
+    users_data[i].coords = users_data[i].get_coordinates()
+    users_data[i].marker.set_position(*users_data[i].coords)
+    users_data[i].marker.set_text(text=users_data[i].name)
 
-def get_map(users_data: list) -> None:
-    for user in users_data:
-        user['img_url'] = f"https://randomuser.me/api/portraits/women/{random.randint(0, 99)}.jpg"
+    list_update_function(users_data)
 
-    m = folium.Map(location=[52.0, 19.0], zoom_start=6)
+    button_add.config(text="Dodaj obiekt")
 
-    for user in users_data:
-        popup = (
-            f"Użytkownik: <b>{user['name']}</b><br>"
-            f"Liczba postów: {user['posts']}<br>"
-            f"<img src=\"{user['img_url']}\" width=\"100\" alt=\"zdjęcie\"/>"
-        )
-        folium.Marker(
-            location=get_coordinates(user['location']),
-            tooltip=f"{user['name']} ({user['location']})",
-            popup=popup,
-            icon=folium.Icon(icon="user"),
-        ).add_to(m)
-
-    m.save("notatnik.html")
-    print("Mapa wygenerowana i zapisana jako notatnik.html")
-
-
-if __name__ == "__main__":
-    users_data: list = []
-    add_user(users_data)
-    remove_user(users_data)
+    for entry in entries.values():
+        entry.delete(0, "end")
